@@ -8,12 +8,63 @@ import pdfplumber
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-MODEL = "gemini-3.5-flash-lite"  # Change to "gemini-3.5-flash" or "gemini-3.8-flash" if needed
+MODEL = "gemini-3.5-flash-lite"
 
-st.set_page_config(page_title="Notice Simplifier", page_icon="📄", layout="centered")
-st.title("Notice Simplifier")
-st.caption("Simplify complex notices and government documents into easy language")
-st.warning("This is only for understanding. It is not official advice. Always check the original document.")
+st.set_page_config(
+    page_title="Notice Simplifier",
+    page_icon="📄",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
+
+# ------------------- Custom CSS -------------------
+st.markdown("""
+<style>
+    /* Clean modern look */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 780px;
+    }
+    h1 {
+        font-weight: 650;
+        letter-spacing: -0.5px;
+    }
+    .stButton > button {
+        border-radius: 10px;
+        font-weight: 500;
+        height: 3rem;
+        transition: all 0.2s;
+    }
+    .stButton > button:hover {
+        transform: translateY(-1px);
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 12px;
+        border: 1px solid #e6e6e6;
+        background: #fafafa;
+    }
+    .disclaimer {
+        background: #fff8e6;
+        border-left: 4px solid #f5a623;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 0.95rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ------------------- Header -------------------
+st.markdown("<h1 style='text-align: center; margin-bottom: 0.2rem;'>📄 Notice Simplifier</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #666; margin-top: 0;'>Turn complex official notices into simple, clear language</p>", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="disclaimer">
+<strong>Note:</strong> This is only for understanding. It is not official advice. Always verify with the original document.
+</div>
+""", unsafe_allow_html=True)
+
+st.write("")
 
 # ------------------- Functions -------------------
 def extract_text_from_pdf(uploaded_file):
@@ -61,10 +112,7 @@ OUTPUT FORMAT (follow this structure):
 Document to simplify:
 {document}
 """
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=prompt
-    )
+    response = client.models.generate_content(model=MODEL, contents=prompt)
     return response.text
 
 def answer_question(document: str, question: str) -> str:
@@ -85,74 +133,83 @@ Question: {question}
 
 Answer:
 """
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=prompt
-    )
+    response = client.models.generate_content(model=MODEL, contents=prompt)
     return response.text
 
-# ------------------- UI -------------------
-language = st.radio("Simplify into:", ["Simple English", "Simple Hindi"], horizontal=True)
+# ------------------- Main UI -------------------
+language = st.radio(
+    "Simplify into",
+    ["Simple English", "Simple Hindi"],
+    horizontal=True,
+    label_visibility="collapsed"
+)
 
-st.subheader("Upload or Paste Document")
+st.subheader("Upload or paste your document")
 
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    uploaded_file = st.file_uploader("Upload a file (PDF or TXT)", type=["pdf", "txt"])
-
-with col2:
-    document_text = st.text_area("Or paste your notice here", height=150, placeholder="Paste the full notice here...")
+tab1, tab2 = st.tabs(["📤 Upload File", "📝 Paste Text"])
 
 final_document = ""
 
-if uploaded_file is not None:
-    if uploaded_file.type == "application/pdf":
-        final_document = extract_text_from_pdf(uploaded_file)
-    elif uploaded_file.type == "text/plain":
-        final_document = uploaded_file.read().decode("utf-8")
-    
-    if final_document:
-        st.success(f"File loaded: {uploaded_file.name}")
-        with st.expander("Preview extracted text"):
-            st.text(final_document[:1200] + ("..." if len(final_document) > 1200 else ""))
+with tab1:
+    uploaded_file = st.file_uploader(
+        "Upload PDF or TXT",
+        type=["pdf", "txt"],
+        label_visibility="collapsed"
+    )
+    if uploaded_file:
+        if uploaded_file.type == "application/pdf":
+            final_document = extract_text_from_pdf(uploaded_file)
+        else:
+            final_document = uploaded_file.read().decode("utf-8")
+        if final_document:
+            st.success(f"Loaded: {uploaded_file.name}")
+            with st.expander("Preview text"):
+                st.text(final_document[:1000] + ("..." if len(final_document) > 1000 else ""))
 
-elif document_text.strip():
-    final_document = document_text.strip()
+with tab2:
+    document_text = st.text_area(
+        "Paste notice here",
+        height=180,
+        placeholder="Paste the full notice or document text here...",
+        label_visibility="collapsed"
+    )
+    if document_text.strip():
+        final_document = document_text.strip()
+
+st.write("")
 
 if st.button("Simplify Document", type="primary", use_container_width=True):
     if not final_document:
         st.error("Please upload a file or paste a document first.")
     else:
-        with st.spinner("Simplifying..."):
+        with st.spinner("Simplifying your document..."):
             try:
                 simplified = simplify_document(final_document, language)
-                
                 st.subheader("Simplified Version")
                 with st.container(border=True):
                     st.markdown(simplified)
-                
                 st.session_state["document"] = final_document
-                st.session_state["simplified"] = simplified
             except Exception as e:
-                st.error(f"Error while simplifying: {e}")
+                st.error(f"Something went wrong: {e}")
 
-# Question section
+# ------------------- Q&A Section -------------------
 if "document" in st.session_state:
     st.divider()
-    st.subheader("Ask a question about this document")
-    
+    st.subheader("Ask a question")
+    st.caption("Ask anything about the document you just simplified")
+
     question = st.text_input(
         "Your question",
-        placeholder="Example: What is the last date? What do I need to do?"
+        placeholder="e.g. What is the last date to apply? What documents do I need?",
+        label_visibility="collapsed"
     )
-    
-    if st.button("Get Answer", type="secondary") and question:
-        with st.spinner("Thinking..."):
+
+    if st.button("Get Answer", use_container_width=True) and question:
+        with st.spinner("Finding the answer..."):
             try:
                 answer = answer_question(st.session_state["document"], question)
-                st.markdown("**Answer:**")
+                st.markdown("**Answer**")
                 with st.container(border=True):
                     st.markdown(answer)
             except Exception as e:
-                st.error(f"Error while answering: {e}")
+                st.error(f"Something went wrong: {e}")
