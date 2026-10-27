@@ -21,55 +21,54 @@ st.set_page_config(
 st.markdown("""
 <style>
     .block-container {
-        padding-top: 1.8rem;
-        padding-bottom: 2rem;
-        max-width: 800px;
+        padding-top: 2rem;
+        padding-bottom: 2.5rem;
+        max-width: 760px;
     }
-    h1 { font-weight: 650; letter-spacing: -0.4px; }
+    h1 { font-weight: 600; letter-spacing: -0.3px; }
     .stButton > button {
-        border-radius: 10px;
+        border-radius: 8px;
         font-weight: 500;
-        height: 2.8rem;
+        height: 2.75rem;
     }
-    .disclaimer {
-        background: #fff8e6;
-        border-left: 4px solid #f5a623;
+    .note {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
         padding: 12px 16px;
         border-radius: 8px;
-        font-size: 0.94rem;
-        margin-bottom: 1.2rem;
+        font-size: 0.92rem;
+        color: #495057;
+        margin-bottom: 1.5rem;
     }
     .footer {
         text-align: center;
-        color: #888;
-        font-size: 0.85rem;
+        color: #868e96;
+        font-size: 0.82rem;
         margin-top: 3rem;
         padding-top: 1rem;
-        border-top: 1px solid #eee;
+        border-top: 1px solid #e9ecef;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ------------------- Header -------------------
-st.markdown("<h1 style='text-align: center; margin-bottom: 0.15rem;'>📄 Notice Simplifier</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #666; margin-top: 0; margin-bottom: 1rem;'>Turn complex official notices into simple, clear language</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; margin-bottom: 0.2rem;'>Notice Simplifier</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #6c757d; margin-top: 0; margin-bottom: 1.2rem;'>Simplify official notices and documents into clear language</p>", unsafe_allow_html=True)
 
 st.markdown("""
-<div class="disclaimer">
-<strong>Note:</strong> This is only for understanding. It is not official advice. Always check the original document.
+<div class="note">
+This tool rewrites documents into simpler language for easier understanding. It is not official advice. Always refer to the original document.
 </div>
 """, unsafe_allow_html=True)
 
-# ------------------- Example Notice -------------------
-EXAMPLE_NOTICE = """Scholarship Application Notice
-All students of Class 9 to 12 are hereby informed that applications for the National Means-cum-Merit Scholarship are open.
-Last date to apply online is 30 November 2026.
-Required documents: Aadhaar card, previous year marksheet, income certificate, and bank passbook.
-Apply only on the official portal. Incomplete applications will be rejected.
-For more details, contact the school office."""
+# ------------------- Example -------------------
+EXAMPLE = """Public Notice
+All residents are informed that the water supply will be disrupted on 15 November 2026 from 8 AM to 4 PM due to pipeline repair work in Ward 12.
+Please store sufficient water in advance. For complaints, contact the Nagar Palika office during working hours.
+Issued by: Municipal Corporation"""
 
-if st.button("Try with example notice", use_container_width=True):
-    st.session_state["example_text"] = EXAMPLE_NOTICE
+if st.button("Load example", use_container_width=True):
+    st.session_state["example"] = EXAMPLE
 
 # ------------------- Functions -------------------
 def extract_text_from_pdf(uploaded_file):
@@ -82,188 +81,141 @@ def extract_text_from_pdf(uploaded_file):
     return text.strip()
 
 def simplify_document(document: str, language: str) -> str:
-    prompt = f"""You are an expert at explaining official documents to school students (Class 6–12) in India.
+    prompt = f"""Rewrite the following document into clear, simple {language}.
 
-Your only job is to rewrite the given document into very simple, clear, and memorable {language}.
+Rules:
+- Use short sentences and everyday words.
+- Keep all facts accurate. Do not add or invent information.
+- Do not guess missing details.
+- Present the content in a clean, scannable structure.
 
-STRICT RULES:
-- Use short, easy sentences.
-- Use simple everyday words. Avoid difficult or formal language.
-- Do NOT add, remove, or change any facts.
-- Do NOT invent dates, amounts, rules, or instructions that are not in the document.
-- If something is unclear or missing in the original, do not guess.
-- Highlight the most important information clearly.
-- Structure the output so it is easy to scan and remember.
+Structure:
+**Summary**
+(One or two sentences)
 
-OUTPUT FORMAT (follow this structure):
-**What is this about?**
-(One short sentence)
+**Action Required**
+- (List what needs to be done, if any)
 
-**What do you need to do?**
-- Point 1
-- Point 2
-- Point 3 (only if needed)
+**Important Dates**
+- (List dates and deadlines, or state none)
 
-**Important Dates / Deadlines**
-- (List clearly, or write “No specific date mentioned”)
+**Other Details**
+- (Any other relevant points)
 
-**Who is this for?**
-(One line, or “Not clearly mentioned”)
-
-**Key Points to Remember**
-- Point 1
-- Point 2
-
-Document to simplify:
+Document:
 {document}
 """
     response = client.models.generate_content(model=MODEL, contents=prompt)
-    return response.text
+    return response.text.strip()
 
 def answer_question(document: str, question: str) -> str:
-    prompt = f"""You must answer the question using ONLY the information present in the document below.
+    prompt = f"""Answer the question using only the information in the document below.
 
-STRICT RULES:
-- Do not use any outside knowledge.
-- Do not guess or assume.
-- If the answer is not clearly written in the document, reply exactly with: 
-  "This information is not mentioned in the document."
-- Keep the answer short, clear, and in simple language.
-- If the answer has a date, amount, or specific instruction, mention it clearly.
+If the answer is not present, respond with: "Not mentioned in the document."
+
+Keep the answer direct and concise.
 
 Document:
 {document}
 
 Question: {question}
 
-Answer:
-"""
+Answer:"""
     response = client.models.generate_content(model=MODEL, contents=prompt)
-    return response.text
+    return response.text.strip()
 
-# ------------------- Main Input -------------------
+# ------------------- Input -------------------
 language = st.radio(
-    "Simplify into",
+    "Output language",
     ["Simple English", "Simple Hindi"],
-    horizontal=True,
-    label_visibility="collapsed"
+    horizontal=True
 )
 
-st.subheader("Upload or paste your document")
+st.write("")
 
-tab1, tab2 = st.tabs(["📤 Upload File", "📝 Paste Text"])
+tab1, tab2 = st.tabs(["Upload file", "Paste text"])
 
-final_document = st.session_state.get("example_text", "")
+final_document = st.session_state.get("example", "")
 
 with tab1:
-    uploaded_file = st.file_uploader(
-        "Upload PDF or TXT",
-        type=["pdf", "txt"],
-        label_visibility="collapsed"
-    )
+    uploaded_file = st.file_uploader("PDF or TXT", type=["pdf", "txt"], label_visibility="collapsed")
     if uploaded_file:
         if uploaded_file.type == "application/pdf":
             final_document = extract_text_from_pdf(uploaded_file)
         else:
             final_document = uploaded_file.read().decode("utf-8")
         if final_document:
-            st.success(f"Loaded: {uploaded_file.name}")
+            st.success(f"Loaded {uploaded_file.name}")
 
 with tab2:
     pasted = st.text_area(
-        "Paste notice here",
-        value=st.session_state.get("example_text", ""),
-        height=180,
-        placeholder="Paste the full notice or document text here...",
+        "Document text",
+        value=st.session_state.get("example", ""),
+        height=160,
+        placeholder="Paste the notice or document here...",
         label_visibility="collapsed"
     )
     if pasted.strip():
         final_document = pasted.strip()
 
-# Length warning
-if final_document and len(final_document) > 8000:
-    st.warning("This document is quite long. Simplification may take longer or cost more tokens.")
+if final_document and len(final_document) > 10000:
+    st.warning("Document is long. Processing may take more time.")
 
 st.write("")
 
-if st.button("Simplify Document", type="primary", use_container_width=True):
+if st.button("Simplify", type="primary", use_container_width=True):
     if not final_document.strip():
-        st.error("Please upload a file or paste a document first.")
+        st.error("Please provide a document.")
     else:
-        with st.spinner("Simplifying... (usually 5–12 seconds)"):
+        with st.spinner("Processing..."):
             try:
-                simplified = simplify_document(final_document, language)
-                
-                # Save to history
+                result = simplify_document(final_document, language)
                 if "history" not in st.session_state:
                     st.session_state.history = []
                 st.session_state.history.insert(0, {
-                    "original_preview": final_document[:120] + "...",
-                    "simplified": simplified,
-                    "language": language
+                    "preview": final_document[:100] + "...",
+                    "result": result,
+                    "lang": language
                 })
                 st.session_state.history = st.session_state.history[:3]
-                
-                st.session_state["document"] = final_document
-                st.session_state["last_simplified"] = simplified
-                st.success("Simplified successfully")
+                st.session_state["doc"] = final_document
+                st.session_state["result"] = result
             except Exception as e:
-                st.error(f"Something went wrong: {e}")
+                st.error(str(e))
 
-# ------------------- Result -------------------
-if "last_simplified" in st.session_state:
-    st.subheader("Simplified Version")
+# ------------------- Output -------------------
+if "result" in st.session_state:
+    st.subheader("Simplified")
     with st.container(border=True):
-        st.markdown(st.session_state["last_simplified"])
-    
-    # Copy button
-    st.code(st.session_state["last_simplified"], language=None)
-    st.caption("Select the text above and copy it, or use your browser’s copy function.")
+        st.markdown(st.session_state["result"])
 
-# ------------------- Q&A -------------------
-if "document" in st.session_state:
+# ------------------- Questions -------------------
+if "doc" in st.session_state:
     st.divider()
-    st.subheader("Ask a question")
-    st.caption("Ask anything about the document")
+    st.subheader("Ask about this document")
 
-    question = st.text_input(
-        "Your question",
-        placeholder="e.g. What is the last date? What documents are needed?",
-        label_visibility="collapsed"
-    )
+    q = st.text_input("Question", placeholder="What is the deadline? Who should I contact?", label_visibility="collapsed")
 
-    if st.button("Get Answer", use_container_width=True) and question:
-        with st.spinner("Finding the answer..."):
+    if st.button("Answer", use_container_width=True) and q:
+        with st.spinner("Checking..."):
             try:
-                answer = answer_question(st.session_state["document"], question)
-                st.markdown("**Answer**")
+                ans = answer_question(st.session_state["doc"], q)
                 with st.container(border=True):
-                    st.markdown(answer)
+                    st.markdown(ans)
             except Exception as e:
-                st.error(f"Something went wrong: {e}")
+                st.error(str(e))
 
 # ------------------- History -------------------
-if "history" in st.session_state and st.session_state.history:
-    with st.expander("Recent simplifications"):
-        for i, item in enumerate(st.session_state.history):
-            st.markdown(f"**{i+1}. {item['language']}** — {item['original_preview']}")
-            st.markdown(item["simplified"][:300] + "...")
+if st.session_state.get("history"):
+    with st.expander("Recent"):
+        for item in st.session_state.history:
+            st.caption(f"{item['lang']} — {item['preview']}")
+            st.markdown(item["result"][:250] + "...")
             st.divider()
-
-# ------------------- How it works -------------------
-with st.expander("How it works"):
-    st.markdown("""
-    1. Upload a PDF/TXT or paste the notice text.  
-    2. Choose Simple English or Simple Hindi.  
-    3. Click **Simplify Document**.  
-    4. Ask questions about the same document if needed.  
-
-    The AI only uses the text you provide. It does not search the internet.
-    """)
 
 # ------------------- Footer -------------------
 st.markdown("""
 <div class="footer">
-Built for school students • Not legal advice • Always verify with the original document
+For easier reading of official documents • Always verify with the original
 </div>
 """, unsafe_allow_html=True)
