@@ -4,93 +4,90 @@ from google import genai
 from dotenv import load_dotenv
 import pdfplumber
 
-# ------------------- Setup -------------------
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
 MODEL = "gemini-3.5-flash-lite"
 
 st.set_page_config(page_title="Notice Simplifier", page_icon="📄", layout="centered")
 
 st.title("Notice Simplifier")
-st.write("Understand official notices and documents in simple language.")
+st.write("Make official notices and documents easier to understand.")
 
 # ------------------- Examples -------------------
 EXAMPLES = {
     "School Scholarship": """Scholarship Notice
-Applications are invited from students of Class 9 to 12 for the National Means-cum-Merit Scholarship Scheme.
-Last date for online application is 30 November 2026.
-Required documents: Aadhaar card, previous year marksheet, income certificate of parents, and bank passbook.
-Only applications submitted on the official portal will be accepted. Incomplete forms will be rejected.""",
+Applications are invited from students of Class 9 to 12 for the National Means-cum-Merit Scholarship.
+Last date to apply online: 30 November 2026.
+Required documents: Aadhaar card, previous year marksheet, income certificate, bank passbook.
+Apply only on the official portal. Incomplete applications will be rejected.""",
 
-    "Municipal Water": """Public Notice – Nagar Palika
-Due to urgent pipeline repair work, water supply in Ward No. 7 will remain suspended on 18 November 2026 from 9:00 AM to 5:00 PM.
-All residents are requested to store sufficient water in advance.
-For complaints or assistance, contact the Ward Office between 10:00 AM and 5:00 PM on working days.""",
+    "Municipal Notice": """Public Notice
+Water supply in Ward 7 will be stopped on 18 November 2026 from 9:00 AM to 5:00 PM for pipeline repair.
+Please store water in advance.
+Contact the ward office between 10 AM and 5 PM for any issues.""",
 
-    "PM-KISAN": """PM-KISAN Scheme Information
-Eligible farmer families can check the status of their installment on the official PM-KISAN portal.
-The next installment is expected to be credited in December 2026.
-Farmers must ensure that their Aadhaar number is linked with their bank account. For help, visit the nearest Common Service Centre or Agriculture Office.""",
+    "PM-KISAN": """PM-KISAN Update
+Eligible farmers can check installment status on the PM-KISAN portal.
+Next installment expected in December 2026.
+Make sure Aadhaar and bank account are linked. Visit nearest CSC or agriculture office for help.""",
 
-    "Exam Notice": """Examination Notice
-The half-yearly examination for Classes 9 and 10 will be held from 5 December 2026 to 15 December 2026.
-Students must bring their school identity card and admit card.
-Reporting time is 8:30 AM. Electronic devices are not allowed inside the examination hall."""
+    "Exam Circular": """Exam Notice
+Half-yearly exams for Class 9 and 10 will be held from 5 to 15 December 2026.
+Students must carry school ID and admit card.
+Reporting time: 8:30 AM. Mobile phones are not allowed in the exam hall."""
 }
 
-with st.expander("Try an example"):
-    cols = st.columns(4)
-    labels = list(EXAMPLES.keys())
-    for i, label in enumerate(labels):
-        with cols[i]:
-            if st.button(label, use_container_width=True):
-                st.session_state.example = EXAMPLES[label]
+with st.expander("Load an example"):
+    cols = st.columns(2)
+    for i, (name, text) in enumerate(EXAMPLES.items()):
+        with cols[i % 2]:
+            if st.button(name, use_container_width=True, key=f"ex_{i}"):
+                st.session_state.example = text
                 st.rerun()
 
-with st.expander("How to use"):
+with st.expander("How to use this"):
     st.markdown("""
-    1. Paste text or upload a PDF/TXT file.  
-    2. Choose language and document type.  
+    1. Paste text or upload a PDF/TXT.  
+    2. Choose language and type of document.  
     3. Click **Simplify**.  
-    4. Read the simplified version or ask questions about it.  
+    4. Read the result or ask questions about it.  
+    The tool only uses the text you give it.
     """)
 
 # ------------------- Functions -------------------
-def extract_text_from_pdf(uploaded_file):
+def extract_text_from_pdf(file):
     try:
         text = ""
-        with pdfplumber.open(uploaded_file) as pdf:
+        with pdfplumber.open(file) as pdf:
             for page in pdf.pages:
                 t = page.extract_text()
                 if t:
                     text += t + "\n"
         return text.strip()
-    except Exception:
+    except:
         return ""
 
-def simplify_document(document: str, language: str, doc_type: str) -> str:
+def simplify_document(doc, language, doc_type):
     focus = {
         "General": "",
-        "School / Education": "Pay attention to dates, required documents, eligibility, and deadlines.",
-        "Municipal / Local Body": "Pay attention to dates, affected areas, and actions residents must take.",
-        "Government Scheme": "Pay attention to eligibility, benefits, required documents, and deadlines."
+        "School / Education": "Focus on deadlines, required documents, and eligibility.",
+        "Municipal / Local Body": "Focus on dates, areas affected, and what residents must do.",
+        "Government Scheme": "Focus on eligibility, benefits, documents needed, and deadlines."
     }.get(doc_type, "")
 
-    prompt = f"""Rewrite the document into clear, simple {language} that is easy to understand.
+    prompt = f"""Rewrite the following document into very clear and simple {language}.
 
 {focus}
 
 Rules:
-- Use short sentences and everyday words.
-- Bold important items such as dates, amounts, deadlines, and required documents.
-- Do not add or invent any information.
+- Short sentences, everyday words.
+- Bold dates, deadlines, amounts, and required documents.
+- Do not add any information.
 - Do not guess.
 
-Use this structure:
-
+Structure:
 **Summary**
-(1-2 sentences)
+(1-2 short sentences)
 
 **What to do**
 - 
@@ -98,194 +95,155 @@ Use this structure:
 **Important dates**
 - 
 
-**Required documents / items**
+**Documents or items needed**
 - 
 
-**Other details**
+**Other important points**
 - 
 
 Document:
-{document}
+{doc}
 """
-    response = client.models.generate_content(model=MODEL, contents=prompt)
-    return response.text.strip()
+    r = client.models.generate_content(model=MODEL, contents=prompt)
+    return r.text.strip()
 
-def chat_about_document(document: str, simplified: str, history: list, user_message: str) -> str:
-    hist = ""
-    for m in history[-5:]:
-        role = "User" if m["role"] == "user" else "Assistant"
-        hist += f"{role}: {m['content']}\n"
+def answer_from_document(doc, simplified, history, question):
+    hist = "\n".join([f"{'User' if m['role']=='user' else 'Assistant'}: {m['content']}" for m in history[-4:]])
+    prompt = f"""Answer the user's question using only the document and simplified version below.
 
-    prompt = f"""Help the user understand the official document below. Use only information from the document and its simplified version.
+If the answer is not in the document:
+- Say clearly that it is not mentioned.
+- Then give practical next steps (related points from the document, who to contact if mentioned, or what to ask the office).
 
-If the exact answer is not in the document:
-- Clearly say it is not mentioned.
-- Then give practical next steps (what to check, who to contact if mentioned, related points that are in the document, or what to ask the issuing authority).
+Do not invent information.
 
-Do not invent facts.
-
-Original:
-{document}
+Document:
+{doc}
 
 Simplified:
 {simplified}
 
-Conversation:
+Recent chat:
 {hist}
 
-User: {user_message}
+Question: {question}
 
-Assistant:"""
-    response = client.models.generate_content(model=MODEL, contents=prompt)
-    return response.text.strip()
+Answer:"""
+    r = client.models.generate_content(model=MODEL, contents=prompt)
+    return r.text.strip()
 
-# ------------------- Input -------------------
-st.subheader("Add your document")
+# ------------------- Input Section -------------------
+st.subheader("1. Add document")
 
-if not st.session_state.get("doc") and not st.session_state.get("example"):
-    st.info("Paste a school notice, municipal circular, exam notice, or government scheme to begin.")
+if not any(k in st.session_state for k in ["doc", "example"]):
+    st.info("Start by pasting a notice or loading an example above.")
 
-doc_type = st.selectbox(
-    "Document type",
-    ["General", "School / Education", "Municipal / Local Body", "Government Scheme"]
-)
+doc_type = st.selectbox("Document type", ["General", "School / Education", "Municipal / Local Body", "Government Scheme"])
+language = st.radio("Language", ["Simple English", "Simple Hindi"], horizontal=True)
+method = st.radio("How to add", ["Paste", "Upload"], horizontal=True)
 
-language = st.radio("Simplify into", ["Simple English", "Simple Hindi"], horizontal=True)
-
-method = st.radio("Input", ["Paste text", "Upload file"], horizontal=True)
-
-final_document = ""
-
-if method == "Paste text":
-    final_document = st.text_area(
-        "Paste the notice",
-        value=st.session_state.get("example", ""),
-        height=170,
-        placeholder="Paste the full text here..."
-    )
+text = ""
+if method == "Paste":
+    text = st.text_area("Paste notice here", value=st.session_state.get("example", ""), height=160)
 else:
-    uploaded = st.file_uploader("Upload PDF or TXT", type=["pdf", "txt"])
-    if uploaded:
-        if uploaded.type == "application/pdf":
-            final_document = extract_text_from_pdf(uploaded)
-            if not final_document:
-                st.error("Could not read text from this PDF. Try pasting the text instead.")
-        else:
-            final_document = uploaded.read().decode("utf-8", errors="ignore")
-        if final_document:
-            st.success(f"Loaded {uploaded.name}")
+    f = st.file_uploader("PDF or TXT", type=["pdf", "txt"])
+    if f:
+        text = extract_text_from_pdf(f) if f.type == "application/pdf" else f.read().decode("utf-8", errors="ignore")
+        if not text and f.type == "application/pdf":
+            st.error("Could not extract text from this PDF. Please paste the text instead.")
+        elif text:
+            st.success(f"Loaded {f.name}")
 
-# Stats
-if final_document.strip():
-    chars = len(final_document.strip())
-    words = len(final_document.split())
-    st.caption(f"{chars:,} characters · {words:,} words")
-    if chars < 40:
-        st.warning("Text looks very short.")
-    elif chars > 15000:
-        st.warning("Long document — simplification may take longer.")
+if text.strip():
+    st.caption(f"{len(text):,} characters · {len(text.split()):,} words")
 
-col1, col2 = st.columns([3, 1])
-with col1:
-    simplify_clicked = st.button("Simplify", type="primary", use_container_width=True, disabled=not final_document.strip())
-with col2:
-    if st.button("Start over", use_container_width=True):
-        for k in ["doc", "result", "chat", "example"]:
-            st.session_state.pop(k, None)
+c1, c2 = st.columns([4, 1])
+with c1:
+    do_simplify = st.button("Simplify", type="primary", use_container_width=True, disabled=not text.strip())
+with c2:
+    if st.button("Reset", use_container_width=True):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
         st.rerun()
 
-if simplify_clicked and final_document.strip():
-    with st.spinner("Simplifying the document..."):
+if do_simplify and text.strip():
+    with st.spinner("Simplifying..."):
         try:
-            result = simplify_document(final_document, language, doc_type)
-            st.session_state.doc = final_document
-            st.session_state.result = result
+            simplified = simplify_document(text, language, doc_type)
+            st.session_state.doc = text
+            st.session_state.result = simplified
             st.session_state.chat = []
-            st.success("Simplified successfully")
+            st.success("Done")
         except Exception as e:
-            st.error(f"Something went wrong: {e}")
+            st.error(f"Error: {e}")
 
 # ------------------- Result -------------------
 if "result" in st.session_state:
-    st.subheader("Result")
+    st.subheader("2. Simplified result")
 
-    view = st.radio("View", ["Simplified", "Original", "Both"], horizontal=True, label_visibility="collapsed")
-
-    if view == "Simplified":
+    mode = st.radio("Show", ["Simplified", "Original", "Side by side"], horizontal=True)
+    if mode == "Simplified":
         st.markdown(st.session_state.result)
-    elif view == "Original":
-        st.text(st.session_state.doc)
+    elif mode == "Original":
+        st.text_area("Original", st.session_state.doc, height=200, disabled=True)
     else:
-        c1, c2 = st.columns(2)
-        with c1:
+        left, right = st.columns(2)
+        with left:
             st.markdown("**Original**")
-            st.text(st.session_state.doc[:1500] + ("..." if len(st.session_state.doc) > 1500 else ""))
-        with c2:
+            st.text(st.session_state.doc[:1200] + ("..." if len(st.session_state.doc) > 1200 else ""))
+        with right:
             st.markdown("**Simplified**")
             st.markdown(st.session_state.result)
 
-    st.caption("Based only on the text you provided. Always check the original document.")
+    st.caption("Generated only from the text you provided. Always verify with the original document.")
 
-    st.download_button(
-        "Download simplified text",
-        data=st.session_state.result,
-        file_name="simplified_notice.txt",
-        mime="text/plain"
-    )
+    st.download_button("Download simplified version", st.session_state.result, "simplified.txt", "text/plain")
 
-    # ------------------- Suggested Questions -------------------
-    st.write("**Suggested questions**")
-    suggestions = [
-        "What is the last date or deadline?",
-        "What documents or items are required?",
+    # Suggested questions
+    st.write("**Quick questions**")
+    qs = [
+        "What is the deadline?",
+        "What documents are required?",
         "What do I need to do?",
-        "Who should I contact if I have a problem?"
+        "Is there any contact information?"
     ]
-    sug_cols = st.columns(2)
-    for i, s in enumerate(suggestions):
-        with sug_cols[i % 2]:
-            if st.button(s, key=f"sug_{i}", use_container_width=True):
-                st.session_state.pending_question = s
-                st.rerun()
+    qcols = st.columns(2)
+    for idx, q in enumerate(qs):
+        if qcols[idx % 2].button(q, key=f"q{idx}", use_container_width=True):
+            st.session_state.pending = q
+            st.rerun()
 
-    # ------------------- Chat -------------------
-    st.subheader("Ask about this document")
-
+    # Chat
+    st.subheader("3. Ask more")
     if "chat" not in st.session_state:
         st.session_state.chat = []
 
-    for msg in st.session_state.chat:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+    for m in st.session_state.chat:
+        with st.chat_message(m["role"]):
+            st.write(m["content"])
 
-    # Handle suggested question
-    if "pending_question" in st.session_state:
-        q = st.session_state.pop("pending_question")
-        st.session_state.chat.append({"role": "user", "content": q})
-        with st.chat_message("user"):
-            st.markdown(q)
+    if "pending" in st.session_state:
+        pq = st.session_state.pop("pending")
+        st.session_state.chat.append({"role": "user", "content": pq})
         with st.chat_message("assistant"):
-            with st.spinner("Checking the document..."):
-                reply = chat_about_document(st.session_state.doc, st.session_state.result, st.session_state.chat, q)
-                st.markdown(reply)
-                st.session_state.chat.append({"role": "assistant", "content": reply})
+            ans = answer_from_document(st.session_state.doc, st.session_state.result, st.session_state.chat, pq)
+            st.write(ans)
+            st.session_state.chat.append({"role": "assistant", "content": ans})
 
-    if user_q := st.chat_input("Ask about dates, documents, actions, eligibility..."):
-        st.session_state.chat.append({"role": "user", "content": user_q})
+    if msg := st.chat_input("Ask anything about this notice..."):
+        st.session_state.chat.append({"role": "user", "content": msg})
         with st.chat_message("user"):
-            st.markdown(user_q)
+            st.write(msg)
         with st.chat_message("assistant"):
-            with st.spinner("Checking the document..."):
-                try:
-                    reply = chat_about_document(st.session_state.doc, st.session_state.result, st.session_state.chat, user_q)
-                    st.markdown(reply)
-                    st.session_state.chat.append({"role": "assistant", "content": reply})
-                except Exception as e:
-                    st.error(str(e))
+            with st.spinner("Looking in the document..."):
+                ans = answer_from_document(st.session_state.doc, st.session_state.result, st.session_state.chat, msg)
+                st.write(ans)
+                st.session_state.chat.append({"role": "assistant", "content": ans})
 
-    if st.session_state.chat and st.button("Clear chat"):
+    if st.session_state.get("chat") and st.button("Clear questions"):
         st.session_state.chat = []
         st.rerun()
 
 st.divider()
-st.caption("Always verify important information with the original document or the issuing authority.")
+st.caption("This tool is for understanding only. It does not replace the original document or official advice.")
+st.caption("This tool is created and developed by Advance Computer Academy")
