@@ -10,17 +10,10 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 MODEL = "gemini-3.5-flash-lite"
 
-st.set_page_config(
-    page_title="Notice Simplifier",
-    page_icon="📄",
-    layout="centered"
-)
+st.set_page_config(page_title="Notice Simplifier", page_icon="📄", layout="centered")
 
-# ------------------- Header -------------------
 st.title("Notice Simplifier")
-st.caption("Turn official notices and documents into clear, simple language")
-
-st.info("This simplifies text for easier reading. It is not official advice. Always check the original document.")
+st.write("Paste or upload an official notice. Get a clear, simple version.")
 
 # ------------------- Examples -------------------
 EXAMPLES = {
@@ -41,19 +34,20 @@ The next installment is expected in December 2026.
 Ensure your Aadhaar and bank account details are correctly linked."""
 }
 
-st.write("**Try an example**")
-c1, c2, c3 = st.columns(3)
-with c1:
-    if st.button("School", use_container_width=True):
-        st.session_state.example = EXAMPLES["School"]
-with c2:
-    if st.button("Municipal", use_container_width=True):
-        st.session_state.example = EXAMPLES["Municipal"]
-with c3:
-    if st.button("Scheme", use_container_width=True):
-        st.session_state.example = EXAMPLES["Scheme"]
-
-st.divider()
+with st.expander("Not sure what to try? Load an example"):
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("School notice"):
+            st.session_state.example = EXAMPLES["School"]
+            st.rerun()
+    with c2:
+        if st.button("Municipal notice"):
+            st.session_state.example = EXAMPLES["Municipal"]
+            st.rerun()
+    with c3:
+        if st.button("Farmer scheme"):
+            st.session_state.example = EXAMPLES["Scheme"]
+            st.rerun()
 
 # ------------------- Functions -------------------
 def extract_text_from_pdf(uploaded_file):
@@ -68,32 +62,28 @@ def extract_text_from_pdf(uploaded_file):
 def simplify_document(document: str, language: str, doc_type: str) -> str:
     focus = {
         "General": "",
-        "School / Education": "Focus on dates, required documents, and eligibility.",
-        "Municipal / Local Body": "Focus on dates, affected areas, and required actions.",
-        "Government Scheme": "Focus on eligibility, benefits, documents, and deadlines."
+        "School / Education": "Highlight dates, required documents, and eligibility.",
+        "Municipal / Local Body": "Highlight dates, affected areas, and what people must do.",
+        "Government Scheme": "Highlight eligibility, benefits, documents needed, and deadlines."
     }.get(doc_type, "")
 
-    prompt = f"""Rewrite this document into clear, simple {language}.
+    prompt = f"""Rewrite into clear, simple {language}.
 
 {focus}
 
-Rules:
-- Use short sentences and everyday words.
-- Do not add or invent any information.
-- Do not guess.
+Use short sentences. Do not add information. Do not guess.
 
-Format:
 **Summary**
 (1-2 sentences)
 
 **What to do**
-- (actions or none)
+-
 
 **Important dates**
-- (dates or none mentioned)
+-
 
 **Other details**
-- (remaining points)
+-
 
 Document:
 {document}
@@ -102,7 +92,7 @@ Document:
     return response.text.strip()
 
 def answer_question(document: str, question: str) -> str:
-    prompt = f"""Answer using only the document. If not present, reply exactly: "Not mentioned in the document."
+    prompt = f"""Answer only from the document. If missing, say exactly: "Not mentioned in the document."
 
 Document:
 {document}
@@ -113,79 +103,100 @@ Answer:"""
     response = client.models.generate_content(model=MODEL, contents=prompt)
     return response.text.strip()
 
-# ------------------- Input -------------------
+# ------------------- Main Input -------------------
+st.subheader("1. Add your document")
+
 doc_type = st.selectbox(
-    "Document type",
-    ["General", "School / Education", "Municipal / Local Body", "Government Scheme"]
+    "What kind of document is this?",
+    ["General", "School / Education", "Municipal / Local Body", "Government Scheme"],
+    help="This helps the simplification focus on the right details."
 )
 
-language = st.radio("Language", ["Simple English", "Simple Hindi"], horizontal=True)
+language = st.radio("Simplify into", ["Simple English", "Simple Hindi"], horizontal=True)
 
-tab1, tab2 = st.tabs(["Upload file", "Paste text"])
+input_method = st.radio("How do you want to add it?", ["Paste text", "Upload file"], horizontal=True)
 
-final_document = st.session_state.get("example", "")
+final_document = ""
 
-with tab1:
-    uploaded = st.file_uploader("Choose PDF or TXT", type=["pdf", "txt"])
+if input_method == "Paste text":
+    final_document = st.text_area(
+        "Paste the notice here",
+        value=st.session_state.get("example", ""),
+        height=180,
+        placeholder="Paste the full text of the notice or document..."
+    )
+else:
+    uploaded = st.file_uploader("Upload PDF or TXT file", type=["pdf", "txt"])
     if uploaded:
         if uploaded.type == "application/pdf":
             final_document = extract_text_from_pdf(uploaded)
         else:
             final_document = uploaded.read().decode("utf-8")
         if final_document:
-            st.success(f"Loaded: {uploaded.name}")
+            st.success(f"Loaded {uploaded.name} ({len(final_document)} characters)")
+            with st.expander("Preview extracted text"):
+                st.text(final_document[:800] + ("..." if len(final_document) > 800 else ""))
 
-with tab2:
-    pasted = st.text_area(
-        "Paste document",
-        value=st.session_state.get("example", ""),
-        height=150,
-        placeholder="Paste the notice here..."
-    )
-    if pasted.strip():
-        final_document = pasted.strip()
+# Length feedback
+if final_document:
+    char_count = len(final_document.strip())
+    if char_count < 50:
+        st.warning("This looks very short. Make sure you pasted the full notice.")
+    elif char_count > 12000:
+        st.warning("This is a long document. Simplification may take longer.")
 
-if final_document and len(final_document) > 10000:
-    st.warning("Long document — this may take a bit longer.")
+# ------------------- Action -------------------
+st.subheader("2. Simplify")
 
-if st.button("Simplify", type="primary", use_container_width=True):
-    if not final_document.strip():
-        st.error("Please upload a file or paste text.")
-    else:
-        with st.spinner("Simplifying..."):
-            try:
-                result = simplify_document(final_document, language, doc_type)
-                st.session_state.doc = final_document
-                st.session_state.result = result
-                if "history" not in st.session_state:
-                    st.session_state.history = []
-                st.session_state.history.insert(0, {
-                    "preview": final_document[:90] + "...",
-                    "result": result,
-                    "type": doc_type
-                })
-                st.session_state.history = st.session_state.history[:3]
-            except Exception as e:
-                st.error(str(e))
+if st.button("Simplify now", type="primary", use_container_width=True, disabled=not final_document.strip()):
+    with st.spinner("Reading and simplifying..."):
+        try:
+            result = simplify_document(final_document, language, doc_type)
+            st.session_state.doc = final_document
+            st.session_state.result = result
+            st.session_state.language_used = language
+            if "history" not in st.session_state:
+                st.session_state.history = []
+            st.session_state.history.insert(0, {
+                "preview": final_document[:80] + "...",
+                "result": result,
+                "type": doc_type
+            })
+            st.session_state.history = st.session_state.history[:3]
+            st.success("Done")
+        except Exception as e:
+            st.error(f"Could not simplify: {e}")
 
 # ------------------- Result -------------------
 if "result" in st.session_state:
-    st.subheader("Simplified")
+    st.subheader("Simplified version")
     st.markdown(st.session_state.result)
-    st.download_button(
-        "Download as text",
-        data=st.session_state.result,
-        file_name="simplified.txt",
-        mime="text/plain"
-    )
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.download_button(
+            "Download",
+            data=st.session_state.result,
+            file_name="simplified.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+    with col_b:
+        if st.button("Simplify another", use_container_width=True):
+            for key in ["result", "doc", "example"]:
+                st.session_state.pop(key, None)
+            st.rerun()
 
 # ------------------- Questions -------------------
 if "doc" in st.session_state:
     st.divider()
-    st.subheader("Ask about this document")
-    question = st.text_input("Question", placeholder="What is the deadline? What documents are needed?")
-    if st.button("Get answer") and question:
-        with st.spinner("Checking..."):
+    st.subheader("3. Ask a question (optional)")
+    st.caption("Answers come only from the document you just simplified.")
+
+    question = st.text_input("Your question", placeholder="What is the last date? What documents do I need?")
+
+    if st.button("Get answer", disabled=not question) and question:
+        with st.spinner("Checking the document..."):
             try:
                 answer = answer_question(st.session_state.doc, question)
                 st.write(answer)
@@ -194,10 +205,12 @@ if "doc" in st.session_state:
 
 # ------------------- History -------------------
 if st.session_state.get("history"):
-    with st.expander("Recent"):
-        for item in st.session_state.history:
+    with st.expander("Previous simplifications"):
+        for i, item in enumerate(st.session_state.history):
             st.write(f"**{item['type']}** — {item['preview']}")
-            st.caption(item["result"][:180] + "...")
+            if st.button(f"Show again", key=f"hist_{i}"):
+                st.session_state.result = item["result"]
+                st.rerun()
             st.divider()
 
-st.caption("Always verify important details with the original document.")
+st.caption("Always double-check important details against the original document.")
