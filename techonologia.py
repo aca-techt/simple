@@ -11,9 +11,8 @@ MODEL = "gemini-3.5-flash-lite"
 st.set_page_config(page_title="Notice Simplifier", page_icon="📄", layout="centered")
 
 st.title("Notice Simplifier")
-st.write("Make official notices and documents easier to understand.")
+st.write("Turn an official notice into simple language, then see what people often miss and what the notice left out.")
 
-# ------------------- Examples -------------------
 EXAMPLES = {
     "School Scholarship": """Scholarship Notice
 Applications are invited from students of Class 9 to 12 for the National Means-cum-Merit Scholarship.
@@ -45,16 +44,6 @@ with st.expander("Load an example"):
                 st.session_state.example = text
                 st.rerun()
 
-with st.expander("How to use this"):
-    st.markdown("""
-    1. Paste text or upload a PDF/TXT.  
-    2. Choose language and type of document.  
-    3. Click **Simplify**.  
-    4. Read the result or ask questions about it.  
-    The tool only uses the text you give it.
-    """)
-
-# ------------------- Functions -------------------
 def extract_text_from_pdf(file):
     try:
         text = ""
@@ -64,42 +53,44 @@ def extract_text_from_pdf(file):
                 if t:
                     text += t + "\n"
         return text.strip()
-    except:
+    except Exception:
         return ""
 
-def simplify_document(doc, language, doc_type):
+def analyze_document(doc, language, doc_type):
     focus = {
         "General": "",
-        "School / Education": "Focus on deadlines, required documents, and eligibility.",
-        "Municipal / Local Body": "Focus on dates, areas affected, and what residents must do.",
-        "Government Scheme": "Focus on eligibility, benefits, documents needed, and deadlines."
+        "School / Education": "Think about students and parents.",
+        "Municipal / Local Body": "Think about residents.",
+        "Government Scheme": "Think about people applying for a scheme."
     }.get(doc_type, "")
 
-    prompt = f"""Rewrite the following document into very clear and simple {language}.
+    prompt = f"""Read the official document below. Reply in {language}. {focus}
 
-{focus}
+Use ONLY facts from the document. Do not invent dates, rules, phone numbers, or offices.
 
-Rules:
-- Short sentences, everyday words.
-- Bold dates, deadlines, amounts, and required documents.
-- Do not add any information.
-- Do not guess.
+Return exactly these three sections:
 
-Structure:
-**Summary**
-(1-2 short sentences)
+## Simplified
+Rewrite in short, simple sentences.
+Bold dates, deadlines, and required documents.
+Include:
+- Summary (1-2 sentences)
+- What to do
+- Important dates
+- Documents or items needed
+- Other important points
 
-**What to do**
-- 
+## What can go wrong
+List 3 to 5 specific mistakes a person could make with THIS notice.
+Each point must be based on something actually written in the document.
+Example style: missing a date that is written, forgetting a listed document, applying the wrong way.
+If you cannot find real risks, write: "No clear risk is stated in this notice."
 
-**Important dates**
-- 
-
-**Documents or items needed**
-- 
-
-**Other important points**
-- 
+## Missing information
+List important details a reader would normally need that are NOT written in this notice.
+Examples: no contact number, no office address, no fee amount, no exact link, no eligibility rule.
+Only list things that are truly absent.
+If nothing important is missing, write: "No major gap is obvious from this text."
 
 Document:
 {doc}
@@ -107,21 +98,46 @@ Document:
     r = client.models.generate_content(model=MODEL, contents=prompt)
     return r.text.strip()
 
-def answer_from_document(doc, simplified, history, question):
-    hist = "\n".join([f"{'User' if m['role']=='user' else 'Assistant'}: {m['content']}" for m in history[-4:]])
-    prompt = f"""Answer the user's question using only the document and simplified version below.
+def split_sections(text):
+    parts = {"simplified": "", "wrong": "", "missing": ""}
+    current = None
+    buf = []
+    for line in text.splitlines():
+        low = line.strip().lower()
+        if low.startswith("## simplified"):
+            if current:
+                parts[current] = "\n".join(buf).strip()
+            current = "simplified"
+            buf = []
+        elif low.startswith("## what can go wrong"):
+            if current:
+                parts[current] = "\n".join(buf).strip()
+            current = "wrong"
+            buf = []
+        elif low.startswith("## missing information"):
+            if current:
+                parts[current] = "\n".join(buf).strip()
+            current = "missing"
+            buf = []
+        else:
+            buf.append(line)
+    if current:
+        parts[current] = "\n".join(buf).strip()
+    return parts
 
-If the answer is not in the document:
-- Say clearly that it is not mentioned.
-- Then give practical next steps (related points from the document, who to contact if mentioned, or what to ask the office).
-
-Do not invent information.
+def answer_from_document(doc, analysis, history, question):
+    hist = "\n".join(
+        [f"{'User' if m['role']=='user' else 'Assistant'}: {m['content']}" for m in history[-4:]]
+    )
+    prompt = f"""Answer using only the document and the analysis below.
+If the answer is not in the document, say it is not mentioned, then give a practical next step.
+Do not invent facts.
 
 Document:
 {doc}
 
-Simplified:
-{simplified}
+Analysis:
+{analysis}
 
 Recent chat:
 {hist}
@@ -132,25 +148,28 @@ Answer:"""
     r = client.models.generate_content(model=MODEL, contents=prompt)
     return r.text.strip()
 
-# ------------------- Input Section -------------------
 st.subheader("1. Add document")
 
-if not any(k in st.session_state for k in ["doc", "example"]):
-    st.info("Start by pasting a notice or loading an example above.")
-
-doc_type = st.selectbox("Document type", ["General", "School / Education", "Municipal / Local Body", "Government Scheme"])
+doc_type = st.selectbox(
+    "Document type",
+    ["General", "School / Education", "Municipal / Local Body", "Government Scheme"]
+)
 language = st.radio("Language", ["Simple English", "Simple Hindi"], horizontal=True)
 method = st.radio("How to add", ["Paste", "Upload"], horizontal=True)
 
 text = ""
 if method == "Paste":
-    text = st.text_area("Paste notice here", value=st.session_state.get("example", ""), height=160)
+    text = st.text_area(
+        "Paste notice here",
+        value=st.session_state.get("example", ""),
+        height=160
+    )
 else:
     f = st.file_uploader("PDF or TXT", type=["pdf", "txt"])
     if f:
         text = extract_text_from_pdf(f) if f.type == "application/pdf" else f.read().decode("utf-8", errors="ignore")
-        if not text and f.type == "application/pdf":
-            st.error("Could not extract text from this PDF. Please paste the text instead.")
+        if f.type == "application/pdf" and not text:
+            st.error("Could not read this PDF. Paste the text instead.")
         elif text:
             st.success(f"Loaded {f.name}")
 
@@ -159,62 +178,56 @@ if text.strip():
 
 c1, c2 = st.columns([4, 1])
 with c1:
-    do_simplify = st.button("Simplify", type="primary", use_container_width=True, disabled=not text.strip())
+    do_it = st.button("Analyze", type="primary", use_container_width=True, disabled=not text.strip())
 with c2:
     if st.button("Reset", use_container_width=True):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.rerun()
 
-if do_simplify and text.strip():
-    with st.spinner("Simplifying..."):
+if do_it and text.strip():
+    with st.spinner("Reading the notice..."):
         try:
-            simplified = simplify_document(text, language, doc_type)
+            raw = analyze_document(text, language, doc_type)
+            parts = split_sections(raw)
             st.session_state.doc = text
-            st.session_state.result = simplified
+            st.session_state.raw = raw
+            st.session_state.parts = parts
             st.session_state.chat = []
-            st.success("Done")
         except Exception as e:
             st.error(f"Error: {e}")
 
-# ------------------- Result -------------------
-if "result" in st.session_state:
-    st.subheader("2. Simplified result")
+if "parts" in st.session_state:
+    parts = st.session_state.parts
 
-    mode = st.radio("Show", ["Simplified", "Original", "Side by side"], horizontal=True)
-    if mode == "Simplified":
-        st.markdown(st.session_state.result)
-    elif mode == "Original":
-        st.text_area("Original", st.session_state.doc, height=200, disabled=True)
+    st.subheader("2. Simplified")
+    if parts["simplified"]:
+        st.markdown(parts["simplified"])
     else:
-        left, right = st.columns(2)
-        with left:
-            st.markdown("**Original**")
-            st.text(st.session_state.doc[:1200] + ("..." if len(st.session_state.doc) > 1200 else ""))
-        with right:
-            st.markdown("**Simplified**")
-            st.markdown(st.session_state.result)
+        st.markdown(st.session_state.raw)
 
-    st.caption("Generated only from the text you provided. Always verify with the original document.")
+    st.subheader("3. What can go wrong")
+    st.warning(parts["wrong"] or "No clear risk is stated in this notice.")
 
-    st.download_button("Download simplified version", st.session_state.result, "simplified.txt", "text/plain")
+    st.subheader("4. Missing information")
+    st.info(parts["missing"] or "No major gap is obvious from this text.")
 
-    # Suggested questions
-    st.write("**Quick questions**")
-    qs = [
-        "What is the deadline?",
-        "What documents are required?",
-        "What do I need to do?",
-        "Is there any contact information?"
-    ]
-    qcols = st.columns(2)
-    for idx, q in enumerate(qs):
-        if qcols[idx % 2].button(q, key=f"q{idx}", use_container_width=True):
-            st.session_state.pending = q
-            st.rerun()
+    st.caption("These points come only from the text you provided. Always check the original notice.")
 
-    # Chat
-    st.subheader("3. Ask more")
+    download_text = (
+        "SIMPLIFIED\n" + (parts["simplified"] or st.session_state.raw)
+        + "\n\nWHAT CAN GO WRONG\n" + (parts["wrong"] or "")
+        + "\n\nMISSING INFORMATION\n" + (parts["missing"] or "")
+    )
+    st.download_button(
+        "Download full analysis",
+        data=download_text,
+        file_name="notice_analysis.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+
+    st.subheader("5. Ask about this notice")
     if "chat" not in st.session_state:
         st.session_state.chat = []
 
@@ -222,28 +235,20 @@ if "result" in st.session_state:
         with st.chat_message(m["role"]):
             st.write(m["content"])
 
-    if "pending" in st.session_state:
-        pq = st.session_state.pop("pending")
-        st.session_state.chat.append({"role": "user", "content": pq})
-        with st.chat_message("assistant"):
-            ans = answer_from_document(st.session_state.doc, st.session_state.result, st.session_state.chat, pq)
-            st.write(ans)
-            st.session_state.chat.append({"role": "assistant", "content": ans})
-
-    if msg := st.chat_input("Ask anything about this notice..."):
+    if msg := st.chat_input("Ask about dates, documents, or what to do..."):
         st.session_state.chat.append({"role": "user", "content": msg})
         with st.chat_message("user"):
             st.write(msg)
         with st.chat_message("assistant"):
-            with st.spinner("Looking in the document..."):
-                ans = answer_from_document(st.session_state.doc, st.session_state.result, st.session_state.chat, msg)
+            with st.spinner("Checking the notice..."):
+                ans = answer_from_document(
+                    st.session_state.doc,
+                    st.session_state.raw,
+                    st.session_state.chat,
+                    msg
+                )
                 st.write(ans)
                 st.session_state.chat.append({"role": "assistant", "content": ans})
 
-    if st.session_state.get("chat") and st.button("Clear questions"):
-        st.session_state.chat = []
-        st.rerun()
-
 st.divider()
-st.caption("This tool is for understanding only. It does not replace the original document or official advice.")
-st.caption("This tool is created and developed by Advance Computer Academy")
+st.caption("For understanding only. Not official advice.")
