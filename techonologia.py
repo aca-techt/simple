@@ -12,59 +12,98 @@ st.set_page_config(page_title="Saral-it", page_icon="📄", layout="centered")
 
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&display=swap');
+
+    .stApp {
+        background: #050505;
+        font-family: 'Inter', sans-serif;
+    }
     .block-container {
-        padding-top: 1.2rem;
-        padding-bottom: 2.5rem;
-        max-width: 700px;
+        padding-top: 0.8rem;
+        padding-bottom: 2rem;
+        max-width: 660px;
     }
     .header-wrap {
         text-align: center;
-        margin-bottom: 1.2rem;
+        padding: 1.4rem 0 1rem 0;
+        border-bottom: 3px solid #FF3D00;
+        margin-bottom: 1.6rem;
     }
     .main-title {
-        font-size: 2.8rem;
-        font-weight: 750;
+        font-size: 3.6rem;
+        font-weight: 900;
         margin: 0;
-        background: linear-gradient(135deg, #0D47A1 0%, #00838F 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: -1px;
+        color: #FFFFFF;
+        letter-spacing: -2px;
+        line-height: 0.9;
+        text-transform: uppercase;
+    }
+    .main-title span {
+        color: #FF3D00;
     }
     .tagline {
-        font-size: 0.78rem;
-        letter-spacing: 2.2px;
-        margin-top: 4px;
-        opacity: 0.7;
-        font-weight: 500;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 4px;
+        margin-top: 8px;
+        color: #FF3D00;
+        text-transform: uppercase;
     }
     .stButton > button {
-        border-radius: 12px;
-        font-weight: 550;
-        height: 3rem;
+        border-radius: 2px;
+        font-weight: 800;
+        height: 3.2rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 0.95rem;
         border: none;
     }
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #1565C0, #00838F);
-        color: white;
+        background: #FF3D00;
+        color: #050505;
     }
     .stButton > button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #0D47A1, #006064);
-        box-shadow: 0 4px 12px rgba(21, 101, 192, 0.25);
+        background: #FF6E40;
+        box-shadow: 0 0 24px rgba(255, 61, 0, 0.45);
+    }
+    .stButton > button:not([kind="primary"]) {
+        background: transparent;
+        color: #FFFFFF;
+        border: 2px solid #FF3D00;
+    }
+    .stButton > button:not([kind="primary"]):hover {
+        background: #FF3D00;
+        color: #050505;
     }
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        border-radius: 16px;
-        padding: 0.5rem;
+        border: 1px solid #222;
+        border-left: 4px solid #FF3D00;
+        border-radius: 0;
+        background: #0d0d0d;
+    }
+    h1, h2, h3 {
+        font-weight: 800 !important;
+        letter-spacing: -0.5px;
+        color: #FFFFFF !important;
+    }
+    .stMarkdown, p, label, .stCaption, .stRadio label {
+        color: #e0e0e0 !important;
+        font-weight: 500;
     }
     .stTextArea textarea {
-        border-radius: 12px;
+        background: #111 !important;
+        color: #fff !important;
+        border: 1px solid #333 !important;
+        border-radius: 0;
+        font-weight: 500;
     }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="header-wrap">
-    <div class="main-title">सरल It</div>
-    <div class="tagline">SOLUTIONS · SIMPLE · SMART</div>
+    <div class="main-title">सरल <span>It</span></div>
+    <div class="tagline">Solutions · Simple · Smart</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -159,7 +198,7 @@ def analyse_document(doc, language):
 3-5 specific mistakes based on this notice. If none: "No clear risk is stated."
 
 ## Missing information
-Important details that are absent (contact, address, fee, link, eligibility, etc.). If none: "No major gap is obvious."
+Important details that are absent. If none: "No major gap is obvious."
 
 Document:
 {doc}"""
