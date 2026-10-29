@@ -10,33 +10,54 @@ MODEL = "gemini-3.5-flash-lite"
 
 st.set_page_config(page_title="Saral-it", page_icon="📄", layout="centered")
 
-# Branding CSS
+# Polished CSS that works in both modes
 st.markdown("""
 <style>
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 2rem;
+        max-width: 720px;
+    }
     .saral-header {
         text-align: center;
-        padding: 1rem 0 0.5rem 0;
+        padding: 0.5rem 0 1rem 0;
     }
     .saral-title {
-        font-size: 2.4rem;
+        font-size: 2.6rem;
         font-weight: 700;
-        color: #1565C0;
+        background: linear-gradient(90deg, #1565C0, #00ACC1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin: 0;
         letter-spacing: -0.5px;
     }
     .saral-tagline {
-        color: #1976D2;
-        font-size: 0.85rem;
-        letter-spacing: 1.5px;
-        margin-top: 0.3rem;
+        font-size: 0.8rem;
+        letter-spacing: 2px;
+        margin-top: 0.25rem;
+        opacity: 0.75;
         font-weight: 500;
     }
+    .stButton > button {
+        border-radius: 10px;
+        font-weight: 500;
+        height: 2.8rem;
+        transition: all 0.15s ease;
+    }
     .stButton > button[kind="primary"] {
-        background-color: #1565C0;
+        background: linear-gradient(90deg, #1565C0, #1976D2);
         border: none;
+        color: white;
     }
     .stButton > button[kind="primary"]:hover {
-        background-color: #0D47A1;
+        background: linear-gradient(90deg, #0D47A1, #1565C0);
+        transform: translateY(-1px);
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 12px;
+    }
+    .stRadio > div {
+        gap: 0.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -45,11 +66,9 @@ st.markdown("""
 st.markdown("""
 <div class="saral-header">
     <div class="saral-title">सरल It</div>
-    <div class="saral-tagline">SOLUTIONS. SIMPLE. SMART.</div>
+    <div class="saral-tagline">SOLUTIONS · SIMPLE · SMART</div>
 </div>
 """, unsafe_allow_html=True)
-
-st.write("")
 
 # Language toggle
 lang_choice = st.radio(
@@ -59,7 +78,6 @@ lang_choice = st.radio(
 )
 is_hindi = lang_choice == "हिंदी"
 
-# Labels based on language
 labels = {
     "subtitle": "Simplify notices or analyse what is missing." if not is_hindi else "नोटिस को सरल बनाएं या जानें क्या जानकारी गायब है।",
     "mode_saral": "Saral-it" if not is_hindi else "सरल करें",
@@ -81,7 +99,6 @@ labels = {
 
 st.caption(labels["subtitle"])
 
-# Mode
 mode = st.radio(
     "Choose",
     [labels["mode_saral"], labels["mode_analyse"]],
@@ -204,7 +221,6 @@ def split_analyse(text):
         parts[current] = "\n".join(buf).strip()
     return parts
 
-# Input
 st.subheader(labels["add_doc"])
 
 method = st.radio(
@@ -220,7 +236,8 @@ if method == labels["paste"]:
         labels["paste_here"],
         value=st.session_state.get("example", ""),
         height=160,
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        placeholder=labels["paste_here"]
     )
 else:
     f = st.file_uploader("PDF or TXT", type=["pdf", "txt"], label_visibility="collapsed")
@@ -240,7 +257,7 @@ with col1:
 with col2:
     analyse = st.button(labels["analyse_btn"], use_container_width=True, disabled=not text.strip())
 
-if st.button(labels["reset"]):
+if st.button(labels["reset"], use_container_width=True):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
@@ -253,7 +270,6 @@ if saral and text.strip():
             result = simplify_document(text, output_lang)
             st.session_state.mode_result = "saral"
             st.session_state.simplified = result
-            st.session_state.doc = text
         except Exception as e:
             st.error(str(e))
 
@@ -264,32 +280,31 @@ if analyse and text.strip():
             parts = split_analyse(raw)
             st.session_state.mode_result = "analyse"
             st.session_state.analyse_parts = parts
-            st.session_state.doc = text
         except Exception as e:
             st.error(str(e))
 
-# Results
+# Results inside containers for better look
 if st.session_state.get("mode_result") == "saral" and "simplified" in st.session_state:
-    st.subheader(labels["simplified"])
-    st.markdown(st.session_state.simplified)
-    st.caption(labels["disclaimer"])
+    with st.container(border=True):
+        st.subheader(labels["simplified"])
+        st.markdown(st.session_state.simplified)
+        st.caption(labels["disclaimer"])
     st.download_button(
         labels["download"],
         data=st.session_state.simplified,
         file_name="simplified.txt",
-        mime="text/plain"
+        mime="text/plain",
+        use_container_width=True
     )
 
 if st.session_state.get("mode_result") == "analyse" and "analyse_parts" in st.session_state:
     parts = st.session_state.analyse_parts
-    st.subheader(labels["what_wrong"])
-    st.warning(parts.get("wrong") or ("No clear risk is stated in this notice." if not is_hindi else "इस नोटिस में कोई स्पष्ट जोखिम नहीं बताया गया।"))
-
-    st.subheader(labels["missing"])
-    st.info(parts.get("missing") or ("No major gap is obvious from this text." if not is_hindi else "इस पाठ से कोई बड़ी कमी स्पष्ट नहीं है।"))
-
-    st.caption(labels["disclaimer"])
-
+    with st.container(border=True):
+        st.subheader(labels["what_wrong"])
+        st.warning(parts.get("wrong") or ("No clear risk is stated in this notice." if not is_hindi else "इस नोटिस में कोई स्पष्ट जोखिम नहीं बताया गया।"))
+        st.subheader(labels["missing"])
+        st.info(parts.get("missing") or ("No major gap is obvious from this text." if not is_hindi else "इस पाठ से कोई बड़ी कमी स्पष्ट नहीं है।"))
+        st.caption(labels["disclaimer"])
     download_text = (
         f"{labels['what_wrong']}\n" + (parts.get("wrong") or "")
         + f"\n\n{labels['missing']}\n" + (parts.get("missing") or "")
@@ -298,7 +313,8 @@ if st.session_state.get("mode_result") == "analyse" and "analyse_parts" in st.se
         labels["download"],
         data=download_text,
         file_name="analysis.txt",
-        mime="text/plain"
+        mime="text/plain",
+        use_container_width=True
     )
 
 st.divider()
