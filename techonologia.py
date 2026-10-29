@@ -10,13 +10,81 @@ MODEL = "gemini-3.5-flash-lite"
 
 st.set_page_config(page_title="Saral-it", page_icon="📄", layout="centered")
 
-st.title("Saral-it")
-st.write("Simplify notices or analyse what is missing.")
+# Branding CSS
+st.markdown("""
+<style>
+    .saral-header {
+        text-align: center;
+        padding: 1rem 0 0.5rem 0;
+    }
+    .saral-title {
+        font-size: 2.4rem;
+        font-weight: 700;
+        color: #1565C0;
+        margin: 0;
+        letter-spacing: -0.5px;
+    }
+    .saral-tagline {
+        color: #1976D2;
+        font-size: 0.85rem;
+        letter-spacing: 1.5px;
+        margin-top: 0.3rem;
+        font-weight: 500;
+    }
+    .stButton > button[kind="primary"] {
+        background-color: #1565C0;
+        border: none;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #0D47A1;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-# Mode toggle
+# Header
+st.markdown("""
+<div class="saral-header">
+    <div class="saral-title">सरल It</div>
+    <div class="saral-tagline">SOLUTIONS. SIMPLE. SMART.</div>
+</div>
+""", unsafe_allow_html=True)
+
+st.write("")
+
+# Language toggle
+lang_choice = st.radio(
+    "Language / भाषा",
+    ["English", "हिंदी"],
+    horizontal=True
+)
+is_hindi = lang_choice == "हिंदी"
+
+# Labels based on language
+labels = {
+    "subtitle": "Simplify notices or analyse what is missing." if not is_hindi else "नोटिस को सरल बनाएं या जानें क्या जानकारी गायब है।",
+    "mode_saral": "Saral-it" if not is_hindi else "सरल करें",
+    "mode_analyse": "Analyse" if not is_hindi else "विश्लेषण",
+    "add_doc": "Add document" if not is_hindi else "दस्तावेज़ जोड़ें",
+    "paste": "Paste" if not is_hindi else "पेस्ट करें",
+    "upload": "Upload" if not is_hindi else "अपलोड करें",
+    "paste_here": "Paste notice here" if not is_hindi else "नोटिस यहाँ पेस्ट करें",
+    "simplify_btn": "Saral-it" if not is_hindi else "सरल करें",
+    "analyse_btn": "Analyse" if not is_hindi else "विश्लेषण करें",
+    "reset": "Reset" if not is_hindi else "रीसेट",
+    "simplified": "Simplified" if not is_hindi else "सरल संस्करण",
+    "what_wrong": "What can go wrong" if not is_hindi else "क्या गलत हो सकता है",
+    "missing": "Missing information" if not is_hindi else "गायब जानकारी",
+    "download": "Download" if not is_hindi else "डाउनलोड",
+    "disclaimer": "Based only on the text you provided. Always check the original document." if not is_hindi else "केवल आपके दिए गए पाठ पर आधारित। हमेशा मूल दस्तावेज़ जांचें।",
+    "output_lang": "Simple Hindi" if is_hindi else "Simple English"
+}
+
+st.caption(labels["subtitle"])
+
+# Mode
 mode = st.radio(
     "Choose",
-    ["Saral-it", "Analyse"],
+    [labels["mode_saral"], labels["mode_analyse"]],
     horizontal=True,
     label_visibility="collapsed"
 )
@@ -39,7 +107,7 @@ Next installment expected in December 2026.
 Make sure Aadhaar and bank account are linked. Visit nearest CSC or agriculture office for help.""",
 }
 
-with st.expander("Load an example"):
+with st.expander("Load an example" if not is_hindi else "उदाहरण लोड करें"):
     cols = st.columns(3)
     for i, (name, text) in enumerate(EXAMPLES.items()):
         with cols[i]:
@@ -120,12 +188,12 @@ def split_analyse(text):
     buf = []
     for line in text.splitlines():
         low = line.strip().lower()
-        if low.startswith("## what can go wrong"):
+        if "what can go wrong" in low or "गलत हो सकता" in low:
             if current:
                 parts[current] = "\n".join(buf).strip()
             current = "wrong"
             buf = []
-        elif low.startswith("## missing information"):
+        elif "missing information" in low or "गायब जानकारी" in low:
             if current:
                 parts[current] = "\n".join(buf).strip()
             current = "missing"
@@ -137,57 +205,62 @@ def split_analyse(text):
     return parts
 
 # Input
-st.subheader("Add document")
+st.subheader(labels["add_doc"])
 
-language = st.radio("Language", ["Simple English", "Simple Hindi"], horizontal=True)
-method = st.radio("How to add", ["Paste", "Upload"], horizontal=True)
+method = st.radio(
+    "How to add",
+    [labels["paste"], labels["upload"]],
+    horizontal=True,
+    label_visibility="collapsed"
+)
 
 text = ""
-if method == "Paste":
+if method == labels["paste"]:
     text = st.text_area(
-        "Paste notice here",
+        labels["paste_here"],
         value=st.session_state.get("example", ""),
-        height=160
+        height=160,
+        label_visibility="collapsed"
     )
 else:
-    f = st.file_uploader("PDF or TXT", type=["pdf", "txt"])
+    f = st.file_uploader("PDF or TXT", type=["pdf", "txt"], label_visibility="collapsed")
     if f:
         text = extract_text_from_pdf(f) if f.type == "application/pdf" else f.read().decode("utf-8", errors="ignore")
         if f.type == "application/pdf" and not text:
-            st.error("Could not read this PDF. Paste the text instead.")
+            st.error("Could not read this PDF. Paste the text instead." if not is_hindi else "इस PDF से टेक्स्ट नहीं पढ़ा जा सका। टेक्स्ट पेस्ट करें।")
         elif text:
-            st.success(f"Loaded {f.name}")
+            st.success(f"Loaded {f.name}" if not is_hindi else f"लोड हो गया: {f.name}")
 
 if text.strip():
-    st.caption(f"{len(text):,} characters")
+    st.caption(f"{len(text):,} characters" if not is_hindi else f"{len(text):,} अक्षर")
 
 col1, col2 = st.columns(2)
 with col1:
-    saral = st.button("Saral-it", type="primary", use_container_width=True, disabled=not text.strip())
+    saral = st.button(labels["simplify_btn"], type="primary", use_container_width=True, disabled=not text.strip())
 with col2:
-    analyse = st.button("Analyse", use_container_width=True, disabled=not text.strip())
+    analyse = st.button(labels["analyse_btn"], use_container_width=True, disabled=not text.strip())
 
-if st.button("Reset"):
+if st.button(labels["reset"]):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
 
-# Saral-it
+output_lang = labels["output_lang"]
+
 if saral and text.strip():
-    with st.spinner("Simplifying..."):
+    with st.spinner("Simplifying..." if not is_hindi else "सरल कर रहे हैं..."):
         try:
-            result = simplify_document(text, language)
+            result = simplify_document(text, output_lang)
             st.session_state.mode_result = "saral"
             st.session_state.simplified = result
             st.session_state.doc = text
         except Exception as e:
             st.error(str(e))
 
-# Analyse
 if analyse and text.strip():
-    with st.spinner("Analysing..."):
+    with st.spinner("Analysing..." if not is_hindi else "विश्लेषण कर रहे हैं..."):
         try:
-            raw = analyse_document(text, language)
+            raw = analyse_document(text, output_lang)
             parts = split_analyse(raw)
             st.session_state.mode_result = "analyse"
             st.session_state.analyse_parts = parts
@@ -195,13 +268,13 @@ if analyse and text.strip():
         except Exception as e:
             st.error(str(e))
 
-# Show results based on mode
+# Results
 if st.session_state.get("mode_result") == "saral" and "simplified" in st.session_state:
-    st.subheader("Simplified")
+    st.subheader(labels["simplified"])
     st.markdown(st.session_state.simplified)
-    st.caption("Based only on the text you provided. Always check the original document.")
+    st.caption(labels["disclaimer"])
     st.download_button(
-        "Download simplified text",
+        labels["download"],
         data=st.session_state.simplified,
         file_name="simplified.txt",
         mime="text/plain"
@@ -209,25 +282,24 @@ if st.session_state.get("mode_result") == "saral" and "simplified" in st.session
 
 if st.session_state.get("mode_result") == "analyse" and "analyse_parts" in st.session_state:
     parts = st.session_state.analyse_parts
-    st.subheader("What can go wrong")
-    st.warning(parts.get("wrong") or "No clear risk is stated in this notice.")
+    st.subheader(labels["what_wrong"])
+    st.warning(parts.get("wrong") or ("No clear risk is stated in this notice." if not is_hindi else "इस नोटिस में कोई स्पष्ट जोखिम नहीं बताया गया।"))
 
-    st.subheader("Missing information")
-    st.info(parts.get("missing") or "No major gap is obvious from this text.")
+    st.subheader(labels["missing"])
+    st.info(parts.get("missing") or ("No major gap is obvious from this text." if not is_hindi else "इस पाठ से कोई बड़ी कमी स्पष्ट नहीं है।"))
 
-    st.caption("These points come only from the text you provided.")
+    st.caption(labels["disclaimer"])
 
     download_text = (
-        "WHAT CAN GO WRONG\n" + (parts.get("wrong") or "")
-        + "\n\nMISSING INFORMATION\n" + (parts.get("missing") or "")
+        f"{labels['what_wrong']}\n" + (parts.get("wrong") or "")
+        + f"\n\n{labels['missing']}\n" + (parts.get("missing") or "")
     )
     st.download_button(
-        "Download analysis",
+        labels["download"],
         data=download_text,
         file_name="analysis.txt",
         mime="text/plain"
     )
 
 st.divider()
-st.caption("For understanding only. Not official advice.")
-st.caption("This web app is developed by Advance Computer Academy")
+st.caption("For understanding only. Not official advice." if not is_hindi else "केवल समझने के लिए। आधिकारिक सलाह नहीं।")
