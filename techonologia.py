@@ -14,12 +14,65 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap');
 
-.stApp { background: #F8FAFC; font-family: 'Inter', sans-serif; }
+/* Base */
+.stApp { font-family: 'Inter', sans-serif; }
 .block-container { padding-top: 1.2rem; padding-bottom: 2.5rem; max-width: 720px; }
 
-.header-bar {
+/* Light mode */
+[data-theme="light"] .stApp,
+.stApp:not([data-theme="dark"]) {
+    background: #F8FAFC;
+}
+[data-theme="light"] .header-bar,
+.stApp:not([data-theme="dark"]) .header-bar {
+    background: #F8FAFC;
+    border: 1px solid #E5EAF2;
+}
+[data-theme="light"] .header-title,
+.stApp:not([data-theme="dark"]) .header-title {
+    color: #315EFB;
+}
+[data-theme="light"] .header-title span,
+.stApp:not([data-theme="dark"]) .header-title span {
+    color: #111827;
+}
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3,
+.stApp:not([data-theme="dark"]) h1,
+.stApp:not([data-theme="dark"]) h2,
+.stApp:not([data-theme="dark"]) h3 {
+    color: #172033 !important;
+}
+[data-theme="light"] .stMarkdown, [data-theme="light"] p, [data-theme="light"] label,
+.stApp:not([data-theme="dark"]) .stMarkdown,
+.stApp:not([data-theme="dark"]) p,
+.stApp:not([data-theme="dark"]) label {
+    color: #172033;
+}
+
+/* Dark mode */
+[data-theme="dark"] .stApp {
     background: #111827;
+}
+[data-theme="dark"] .header-bar {
+    background: #111827;
+    border: 1px solid #1F2937;
+}
+[data-theme="dark"] .header-title {
     color: #F8FAFC;
+}
+[data-theme="dark"] .header-title span {
+    color: #C8F169;
+}
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3,
+[data-theme="dark"] .stMarkdown, [data-theme="dark"] p, [data-theme="dark"] label {
+    color: #F8FAFC !important;
+}
+[data-theme="dark"] .stCaption {
+    color: #94A3B8 !important;
+}
+
+/* Shared header */
+.header-bar {
     padding: 1.4rem 1.6rem 1.2rem 1.6rem;
     border-radius: 16px;
     margin-bottom: 1.4rem;
@@ -30,26 +83,17 @@ st.markdown("""
     font-weight: 800;
     margin: 0;
     letter-spacing: -0.6px;
-    color: #F8FAFC;
 }
-.header-title span { color: #C8F169; }
 .header-tag {
     font-size: 0.78rem;
     letter-spacing: 1.8px;
     margin-top: 4px;
-    color: #94A3B8;
     font-weight: 500;
     text-transform: uppercase;
+    opacity: 0.7;
 }
 
-h1, h2, h3, .stSubheader {
-    font-family: 'Manrope', sans-serif !important;
-    color: #172033 !important;
-    font-weight: 700 !important;
-}
-.stMarkdown, p, label, .stCaption { color: #172033; }
-.stCaption { color: #64748B !important; font-size: 0.85rem; }
-
+/* Buttons */
 .stButton > button {
     border-radius: 9px;
     height: 46px;
@@ -66,35 +110,51 @@ h1, h2, h3, .stSubheader {
     background: #2449D8;
 }
 .stButton > button:not([kind="primary"]) {
-    background: #FFFFFF;
-    color: #172033;
+    background: transparent;
     border: 1px solid #E5EAF2;
 }
-.stButton > button:not([kind="primary"]):hover {
-    border-color: #315EFB;
-    color: #315EFB;
+[data-theme="dark"] .stButton > button:not([kind="primary"]) {
+    color: #F8FAFC;
+    border-color: #374151;
+}
+[data-theme="light"] .stButton > button:not([kind="primary"]),
+.stApp:not([data-theme="dark"]) .stButton > button:not([kind="primary"]) {
+    color: #172033;
 }
 
+/* Cards */
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: #FFFFFF;
-    border: 1px solid #E5EAF2;
     border-radius: 14px;
     box-shadow: 0 1px 3px rgba(17, 24, 39, 0.04);
 }
+[data-theme="light"] div[data-testid="stVerticalBlockBorderWrapper"],
+.stApp:not([data-theme="dark"]) div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #FFFFFF;
+    border: 1px solid #E5EAF2;
+}
+[data-theme="dark"] div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #1F2937;
+    border: 1px solid #374151;
+}
 
-.stTextArea textarea, .stTextInput input, .stSelectbox div[data-baseweb="select"] {
-    background: #FFFFFF !important;
-    border: 1px solid #E5EAF2 !important;
+/* Inputs */
+.stTextArea textarea, .stTextInput input {
     border-radius: 8px !important;
+    border: 1px solid #E5EAF2 !important;
+}
+[data-theme="dark"] .stTextArea textarea,
+[data-theme="dark"] .stTextInput input {
+    background: #1F2937 !important;
+    color: #F8FAFC !important;
+    border-color: #374151 !important;
+}
+[data-theme="light"] .stTextArea textarea,
+[data-theme="light"] .stTextInput input,
+.stApp:not([data-theme="dark"]) .stTextArea textarea,
+.stApp:not([data-theme="dark"]) .stTextInput input {
+    background: #FFFFFF !important;
     color: #172033 !important;
 }
-.stTextArea textarea:focus, .stTextInput input:focus {
-    border-color: #315EFB !important;
-    box-shadow: 0 0 0 3px rgba(49, 94, 251, 0.12);
-}
-
-.stRadio > div { gap: 0.6rem; }
-.stTabs [data-baseweb="tab-list"] { gap: 0.4rem; }
 </style>
 """, unsafe_allow_html=True)
 
