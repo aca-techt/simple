@@ -14,27 +14,69 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap');
 
-/* Base */
 .stApp { font-family: 'Inter', sans-serif; }
 .block-container { padding-top: 1.2rem; padding-bottom: 2.5rem; max-width: 720px; }
+
+/* Force dark mode colours */
+[data-theme="dark"] .stApp,
+.stApp[data-theme="dark"] {
+    background-color: #111827 !important;
+}
+[data-theme="dark"] .main .block-container,
+[data-theme="dark"] section.main > div {
+    background-color: #111827 !important;
+}
+[data-theme="dark"] .header-bar {
+    background: #111827 !important;
+    border: 1px solid #1F2937 !important;
+}
+[data-theme="dark"] .header-title {
+    color: #F8FAFC !important;
+}
+[data-theme="dark"] .header-title span {
+    color: #C8F169 !important;
+}
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3,
+[data-theme="dark"] .stMarkdown, [data-theme="dark"] p,
+[data-theme="dark"] label, [data-theme="dark"] .stRadio label {
+    color: #F8FAFC !important;
+}
+[data-theme="dark"] .stCaption {
+    color: #94A3B8 !important;
+}
+[data-theme="dark"] div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #1F2937 !important;
+    border: 1px solid #374151 !important;
+}
+[data-theme="dark"] .stTextArea textarea,
+[data-theme="dark"] .stTextInput input {
+    background: #1F2937 !important;
+    color: #F8FAFC !important;
+    border-color: #374151 !important;
+}
+[data-theme="dark"] .stButton > button:not([kind="primary"]) {
+    color: #F8FAFC !important;
+    border-color: #374151 !important;
+    background: transparent !important;
+}
 
 /* Light mode */
 [data-theme="light"] .stApp,
 .stApp:not([data-theme="dark"]) {
-    background: #F8FAFC;
+    background-color: #F8FAFC !important;
 }
 [data-theme="light"] .header-bar,
 .stApp:not([data-theme="dark"]) .header-bar {
-    background: #F8FAFC;
-    border: 1px solid #E5EAF2;
+    background: #FFFFFF !important;
+    border: 1px solid #E5EAF2 !important;
 }
 [data-theme="light"] .header-title,
 .stApp:not([data-theme="dark"]) .header-title {
-    color: #315EFB;
+    color: #315EFB !important;
 }
 [data-theme="light"] .header-title span,
 .stApp:not([data-theme="dark"]) .header-title span {
-    color: #111827;
+    color: #111827 !important;
 }
 [data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3,
 .stApp:not([data-theme="dark"]) h1,
@@ -42,36 +84,13 @@ st.markdown("""
 .stApp:not([data-theme="dark"]) h3 {
     color: #172033 !important;
 }
-[data-theme="light"] .stMarkdown, [data-theme="light"] p, [data-theme="light"] label,
-.stApp:not([data-theme="dark"]) .stMarkdown,
-.stApp:not([data-theme="dark"]) p,
-.stApp:not([data-theme="dark"]) label {
-    color: #172033;
+[data-theme="light"] div[data-testid="stVerticalBlockBorderWrapper"],
+.stApp:not([data-theme="dark"]) div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E5EAF2 !important;
 }
 
-/* Dark mode */
-[data-theme="dark"] .stApp {
-    background: #111827;
-}
-[data-theme="dark"] .header-bar {
-    background: #111827;
-    border: 1px solid #1F2937;
-}
-[data-theme="dark"] .header-title {
-    color: #F8FAFC;
-}
-[data-theme="dark"] .header-title span {
-    color: #C8F169;
-}
-[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3,
-[data-theme="dark"] .stMarkdown, [data-theme="dark"] p, [data-theme="dark"] label {
-    color: #F8FAFC !important;
-}
-[data-theme="dark"] .stCaption {
-    color: #94A3B8 !important;
-}
-
-/* Shared header */
+/* Shared */
 .header-bar {
     padding: 1.4rem 1.6rem 1.2rem 1.6rem;
     border-radius: 16px;
@@ -92,68 +111,22 @@ st.markdown("""
     text-transform: uppercase;
     opacity: 0.7;
 }
-
-/* Buttons */
 .stButton > button {
     border-radius: 9px;
     height: 46px;
     font-weight: 600;
     font-size: 0.95rem;
     border: none;
-    font-family: 'Inter', sans-serif;
 }
 .stButton > button[kind="primary"] {
-    background: #315EFB;
-    color: #FFFFFF;
+    background: #315EFB !important;
+    color: #FFFFFF !important;
 }
 .stButton > button[kind="primary"]:hover {
-    background: #2449D8;
+    background: #2449D8 !important;
 }
-.stButton > button:not([kind="primary"]) {
-    background: transparent;
-    border: 1px solid #E5EAF2;
-}
-[data-theme="dark"] .stButton > button:not([kind="primary"]) {
-    color: #F8FAFC;
-    border-color: #374151;
-}
-[data-theme="light"] .stButton > button:not([kind="primary"]),
-.stApp:not([data-theme="dark"]) .stButton > button:not([kind="primary"]) {
-    color: #172033;
-}
-
-/* Cards */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 14px;
-    box-shadow: 0 1px 3px rgba(17, 24, 39, 0.04);
-}
-[data-theme="light"] div[data-testid="stVerticalBlockBorderWrapper"],
-.stApp:not([data-theme="dark"]) div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: #FFFFFF;
-    border: 1px solid #E5EAF2;
-}
-[data-theme="dark"] div[data-testid="stVerticalBlockBorderWrapper"] {
-    background: #1F2937;
-    border: 1px solid #374151;
-}
-
-/* Inputs */
-.stTextArea textarea, .stTextInput input {
-    border-radius: 8px !important;
-    border: 1px solid #E5EAF2 !important;
-}
-[data-theme="dark"] .stTextArea textarea,
-[data-theme="dark"] .stTextInput input {
-    background: #1F2937 !important;
-    color: #F8FAFC !important;
-    border-color: #374151 !important;
-}
-[data-theme="light"] .stTextArea textarea,
-[data-theme="light"] .stTextInput input,
-.stApp:not([data-theme="dark"]) .stTextArea textarea,
-.stApp:not([data-theme="dark"]) .stTextInput input {
-    background: #FFFFFF !important;
-    color: #172033 !important;
 }
 </style>
 """, unsafe_allow_html=True)
