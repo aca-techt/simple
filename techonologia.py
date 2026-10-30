@@ -8,102 +8,100 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 MODEL = "gemini-3.5-flash-lite"
 
-st.set_page_config(page_title="Saral-it", page_icon="📄", layout="centered")
+st.set_page_config(page_title="Saral IT", page_icon="📄", layout="centered")
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap');
 
-    .stApp {
-        background: #050505;
-        font-family: 'Inter', sans-serif;
-    }
-    .block-container {
-        padding-top: 0.8rem;
-        padding-bottom: 2rem;
-        max-width: 660px;
-    }
-    .header-wrap {
-        text-align: center;
-        padding: 1.4rem 0 1rem 0;
-        border-bottom: 3px solid #FF3D00;
-        margin-bottom: 1.6rem;
-    }
-    .main-title {
-        font-size: 3.6rem;
-        font-weight: 900;
-        margin: 0;
-        color: #FFFFFF;
-        letter-spacing: -2px;
-        line-height: 0.9;
-        text-transform: uppercase;
-    }
-    .main-title span {
-        color: #FF3D00;
-    }
-    .tagline {
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 4px;
-        margin-top: 8px;
-        color: #FF3D00;
-        text-transform: uppercase;
-    }
-    .stButton > button {
-        border-radius: 2px;
-        font-weight: 800;
-        height: 3.2rem;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        font-size: 0.95rem;
-        border: none;
-    }
-    .stButton > button[kind="primary"] {
-        background: #FF3D00;
-        color: #050505;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background: #FF6E40;
-        box-shadow: 0 0 24px rgba(255, 61, 0, 0.45);
-    }
-    .stButton > button:not([kind="primary"]) {
-        background: transparent;
-        color: #FFFFFF;
-        border: 2px solid #FF3D00;
-    }
-    .stButton > button:not([kind="primary"]):hover {
-        background: #FF3D00;
-        color: #050505;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        border: 1px solid #222;
-        border-left: 4px solid #FF3D00;
-        border-radius: 0;
-        background: #0d0d0d;
-    }
-    h1, h2, h3 {
-        font-weight: 800 !important;
-        letter-spacing: -0.5px;
-        color: #FFFFFF !important;
-    }
-    .stMarkdown, p, label, .stCaption, .stRadio label {
-        color: #e0e0e0 !important;
-        font-weight: 500;
-    }
-    .stTextArea textarea {
-        background: #111 !important;
-        color: #fff !important;
-        border: 1px solid #333 !important;
-        border-radius: 0;
-        font-weight: 500;
-    }
+.stApp { background: #F8FAFC; font-family: 'Inter', sans-serif; }
+.block-container { padding-top: 1.2rem; padding-bottom: 2.5rem; max-width: 720px; }
+
+.header-bar {
+    background: #111827;
+    color: #F8FAFC;
+    padding: 1.4rem 1.6rem 1.2rem 1.6rem;
+    border-radius: 16px;
+    margin-bottom: 1.4rem;
+}
+.header-title {
+    font-family: 'Manrope', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.6px;
+    color: #F8FAFC;
+}
+.header-title span { color: #C8F169; }
+.header-tag {
+    font-size: 0.78rem;
+    letter-spacing: 1.8px;
+    margin-top: 4px;
+    color: #94A3B8;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+h1, h2, h3, .stSubheader {
+    font-family: 'Manrope', sans-serif !important;
+    color: #172033 !important;
+    font-weight: 700 !important;
+}
+.stMarkdown, p, label, .stCaption { color: #172033; }
+.stCaption { color: #64748B !important; font-size: 0.85rem; }
+
+.stButton > button {
+    border-radius: 9px;
+    height: 46px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    font-family: 'Inter', sans-serif;
+}
+.stButton > button[kind="primary"] {
+    background: #315EFB;
+    color: #FFFFFF;
+}
+.stButton > button[kind="primary"]:hover {
+    background: #2449D8;
+}
+.stButton > button:not([kind="primary"]) {
+    background: #FFFFFF;
+    color: #172033;
+    border: 1px solid #E5EAF2;
+}
+.stButton > button:not([kind="primary"]):hover {
+    border-color: #315EFB;
+    color: #315EFB;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #FFFFFF;
+    border: 1px solid #E5EAF2;
+    border-radius: 14px;
+    box-shadow: 0 1px 3px rgba(17, 24, 39, 0.04);
+}
+
+.stTextArea textarea, .stTextInput input, .stSelectbox div[data-baseweb="select"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E5EAF2 !important;
+    border-radius: 8px !important;
+    color: #172033 !important;
+}
+.stTextArea textarea:focus, .stTextInput input:focus {
+    border-color: #315EFB !important;
+    box-shadow: 0 0 0 3px rgba(49, 94, 251, 0.12);
+}
+
+.stRadio > div { gap: 0.6rem; }
+.stTabs [data-baseweb="tab-list"] { gap: 0.4rem; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<div class="header-wrap">
-    <div class="main-title">सरल <span>It</span></div>
-    <div class="tagline">Solutions · Simple · Smart</div>
+<div class="header-bar">
+    <div class="header-title">Saral <span>IT</span></div>
+    <div class="header-tag">Legal document clarity · Simple · Precise</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -111,10 +109,10 @@ lang_choice = st.radio("Language / भाषा", ["English", "हिंदी"]
 is_hindi = lang_choice == "हिंदी"
 
 labels = {
-    "subtitle": "Make official notices easy to understand." if not is_hindi else "आधिकारिक नोटिस को आसान भाषा में समझें।",
+    "subtitle": "Turn official notices into clear language, or analyse what is missing." if not is_hindi else "आधिकारिक नोटिस को सरल भाषा में बदलें, या जानें क्या जानकारी गायब है।",
     "mode_saral": "Saral-it" if not is_hindi else "सरल करें",
     "mode_analyse": "Analyse" if not is_hindi else "विश्लेषण",
-    "add_doc": "Your document" if not is_hindi else "आपका दस्तावेज़",
+    "add_doc": "Document" if not is_hindi else "दस्तावेज़",
     "paste": "Paste" if not is_hindi else "पेस्ट",
     "upload": "Upload" if not is_hindi else "अपलोड",
     "paste_here": "Paste the notice here…" if not is_hindi else "नोटिस यहाँ पेस्ट करें…",
@@ -125,8 +123,10 @@ labels = {
     "what_wrong": "What can go wrong" if not is_hindi else "क्या गलत हो सकता है",
     "missing": "Missing information" if not is_hindi else "गायब जानकारी",
     "download": "Download" if not is_hindi else "डाउनलोड",
-    "disclaimer": "Based only on the text you provided. Always verify with the original." if not is_hindi else "केवल आपके दिए पाठ पर आधारित। हमेशा मूल दस्तावेज़ जांचें।",
-    "output_lang": "Simple Hindi" if is_hindi else "Simple English"
+    "disclaimer": "Based only on the text you provided. Always verify with the original document." if not is_hindi else "केवल आपके दिए पाठ पर आधारित। हमेशा मूल दस्तावेज़ जांचें।",
+    "output_lang": "Simple Hindi" if is_hindi else "Simple English",
+    "ask": "Ask about this notice" if not is_hindi else "इस नोटिस के बारे में पूछें",
+    "ask_placeholder": "Ask about dates, documents, or what to do..." if not is_hindi else "तारीख, दस्तावेज़ या क्या करना है पूछें..."
 }
 
 st.caption(labels["subtitle"])
@@ -223,6 +223,29 @@ def split_analyse(text):
         parts[current] = "\n".join(buf).strip()
     return parts
 
+def answer_from_document(doc, context, history, question):
+    hist = "\n".join(
+        [f"{'User' if m['role']=='user' else 'Assistant'}: {m['content']}" for m in history[-4:]]
+    )
+    prompt = f"""Answer the question using only the document and the analysis below.
+If the answer is not in the document, say it is not mentioned, then give a practical next step.
+Do not invent facts.
+
+Document:
+{doc}
+
+Context / Result:
+{context}
+
+Recent chat:
+{hist}
+
+Question: {question}
+
+Answer:"""
+    r = client.models.generate_content(model=MODEL, contents=prompt)
+    return r.text.strip()
+
 st.subheader(labels["add_doc"])
 
 method = st.radio("Input", [labels["paste"], labels["upload"]], horizontal=True, label_visibility="collapsed")
@@ -262,17 +285,22 @@ out_lang = labels["output_lang"]
 if do_saral and text.strip():
     with st.spinner("Working…" if not is_hindi else "काम हो रहा है…"):
         try:
+            st.session_state.doc = text
             st.session_state.simplified = simplify_document(text, out_lang)
             st.session_state.mode_result = "saral"
+            st.session_state.chat = []
         except Exception as e:
             st.error(str(e))
 
 if do_analyse and text.strip():
     with st.spinner("Working…" if not is_hindi else "काम हो रहा है…"):
         try:
+            st.session_state.doc = text
             raw = analyse_document(text, out_lang)
             st.session_state.analyse_parts = split_analyse(raw)
+            st.session_state.analyse_raw = raw
             st.session_state.mode_result = "analyse"
+            st.session_state.chat = []
         except Exception as e:
             st.error(str(e))
 
@@ -293,6 +321,36 @@ if st.session_state.get("mode_result") == "analyse" and "analyse_parts" in st.se
         st.caption(labels["disclaimer"])
     dl = f"{labels['what_wrong']}\n{p.get('wrong','')}\n\n{labels['missing']}\n{p.get('missing','')}"
     st.download_button(labels["download"], dl, "analysis.txt", "text/plain", use_container_width=True)
+
+if "doc" in st.session_state and st.session_state.get("mode_result"):
+    st.divider()
+    st.subheader(labels["ask"])
+
+    if "chat" not in st.session_state:
+        st.session_state.chat = []
+
+    for m in st.session_state.chat:
+        with st.chat_message(m["role"]):
+            st.write(m["content"])
+
+    if msg := st.chat_input(labels["ask_placeholder"]):
+        st.session_state.chat.append({"role": "user", "content": msg})
+        with st.chat_message("user"):
+            st.write(msg)
+
+        context = st.session_state.get("simplified", "") if st.session_state.mode_result == "saral" else st.session_state.get("analyse_raw", "")
+        with st.chat_message("assistant"):
+            with st.spinner("Checking..." if not is_hindi else "जांच रहे हैं..."):
+                try:
+                    ans = answer_from_document(st.session_state.doc, context, st.session_state.chat, msg)
+                    st.write(ans)
+                    st.session_state.chat.append({"role": "assistant", "content": ans})
+                except Exception as e:
+                    st.error(str(e))
+
+    if st.session_state.get("chat") and st.button("Clear chat" if not is_hindi else "चैट साफ करें"):
+        st.session_state.chat = []
+        st.rerun()
 
 st.divider()
 st.caption("For understanding only · Not official advice" if not is_hindi else "केवल समझने के लिए · आधिकारिक सलाह नहीं")
